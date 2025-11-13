@@ -134,13 +134,13 @@ try:
     jamfpro_base = config['jamf']['url']
     logging.debug("The configured Jamf Pro base url is: {}".format(jamfpro_base))
 
-    logging.info("Setting the username to request an api key.")
-    jamf_user = config['jamf']['username']
-    logging.debug("The user you provided for Jamf is: {}".format(jamf_user))
+    logging.info("Setting the client_id to request an api key.")
+    jamf_client_id = config['jamf']['client_id']
+    logging.debug("The client_id you provided for Jamf is: {}".format(jamf_client_id))
 
-    logging.info("Setting the password to request an api key.")
-    jamf_password = config['jamf']['password']
-    logging.debug("The password you provided for Jamf is: {}".format(jamf_user))
+    logging.info("Setting the client_secret to request an api key.")
+    jamf_client_secret = config['jamf']['client_secret']
+    logging.debug("The client_secret you provided for Jamf is: {}".format(jamf_client_secret))
 
     # This is the address, cname, or FQDN for your snipe-it instance.
     logging.info("Setting the base URL for SnipeIT.")
@@ -213,7 +213,7 @@ retries = Retry(
 )
 session.mount('https://', HTTPAdapter(max_retries=retries))
 
-# Use Basic Auth to request a Jamf Token.
+# Use the client credentials to request a Jamf Token.
 def request_jamf_token():
     # Tokens expire after 60 minutes, but we can't be sure that we're in the same TZ as the Jamf server, so we'll set up a timer.
     global token_request_time
@@ -223,33 +223,37 @@ def request_jamf_token():
     global expires_time
     token_request_time = time.time()
     logging.info("Requesting a new token at {}.".format(token_request_time))
-    api_url = '{0}/api/v1/auth/token'.format(jamfpro_base)
+    api_url = '{0}/api/v1/oauth/token'.format(jamfpro_base)
     # No hook for this api call.
     logging.debug('Calling for a token against: {}\n The username and password can be found earlier in the script.'.format(api_url))
     # No hook for this API call.
-    response = session.post(api_url, auth=(jamf_user, jamf_password), headers=jamfbasicheaders, verify=user_args.do_not_verify_ssl)
+    data = {
+        'client_id': jamf_client_id, 
+        'client_secret': jamf_client_secret,
+        "grant_type": "client_credentials"
+    }
+    logging.debug('The data being sent to JamfPro for token request is: {}'.format(data))
+    response = session.post(api_url, data=data, verify=user_args.do_not_verify_ssl)
     if response.status_code == 200:
         logging.debug("Got back a valid 200 response code.")
         jsonresponse = response.json()
         logging.debug(jsonresponse)
         # So we have our token and Expires time. Set the expires time globably so we can reset later.
         try:
-            expires_time = datetime.datetime.fromisoformat(jsonresponse['expires'].replace("Z", "+00:00"))
+            expires_in = int(jsonresponse['expires_in'])
+            expires_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=expires_in)
         except:
-            # APIs are awful and Jamf doesn't always send enough ms digits. UGH.
-            try:
-                expires_time = datetime.datetime.fromisoformat(jsonresponse['expires'].replace("Z", "0+00:00"))
-            except:
-                logging.error("Jamf sent a malformed timestamp: {}\n Please feel free to complain to Jamf support.".format(jsonresponse['expires']))
-                raise SystemExit("Unable to grok Jamf Timestamp - Exiting")
-        logging.debug("Token expires in: {}".format(expires_time - datetime.datetime.now(datetime.timezone.utc)))
+            logging.error("Jamf sent a malformed timestamp: {}\n Please feel free to complain to Jamf support.".format(jsonresponse['expires_in']))
+            raise SystemExit("Unable to grok Jamf Timestamp - Exiting")
+        logging.debug("Token expires in: {}".format(expires_in))
         # The headers are also global, because they get used elsewhere.
         logging.info("Setting new jamf headers with bearer token")
-        jamfheaders = {'Authorization': 'Bearer {}'.format(jsonresponse['token']),'Accept': 'application/json','Content-Type':'application/json'}
-        jamfxmlheaders = {'Authorization': 'Bearer {}'.format(jsonresponse['token']),'Accept': 'application/xml','Content-Type':'application/xml'}
+        jamfheaders = {'Authorization': 'Bearer {}'.format(jsonresponse['access_token']),'Accept': 'application/json','Content-Type':'application/json'}
+        jamfxmlheaders = {'Authorization': 'Bearer {}'.format(jsonresponse['access_token']),'Accept': 'application/xml','Content-Type':'application/xml'}
         logging.debug('Request headers for JamfPro will be: {}\nRequest headers for Snipe will be: {}'.format(jamfheaders, snipeheaders))
     else:
-        logging.error("Could not obtain a token for use with Jamf's classic API. Please check your username and password.")
+        logging.error("Could not obtain a token for use with Jamf's classic API. Please check your client_id and client_secret.")
+        logging.debug('Response code: {} - {}'.format(response.status_code, response.content))
         raise SystemExit("Unable to obtain Jamf Token")
 
 

@@ -49,7 +49,7 @@ Lastly, if the asset_tag field is blank in JAMF when it is being created in Snip
 
 - Python3 (3.7 or higher) is installed on your system with the requests, json, time, and configparser python libs installed.
 - Network access to both your JAMF and Snipe-IT environments.
-- A JAMF username and password that has read & write permissions for computer assets, mobile device assets, and users.
+- A JAMF client_id and client_secret for the JAMF API that has read & write permissions for computer assets, mobile device assets, and users.
   - Computers: Read, Update
   - Mobile Devices: Read, Update
   - Users: Read, Update
@@ -92,8 +92,8 @@ Note: do not add `""` or `''` around any values.
 **[jamf]**
 
 - `url`: https://*your_jamf_instance*.com:*port*
-- `username`: Jamf API user username
-- `password`: Jamf API user password
+- `client_id`: Jamf API client ID
+- `client_secret`: Jamf API client secret
 
 **[snipe-it]**
 
