@@ -228,7 +228,7 @@ def request_jamf_token():
     logging.debug('Calling for a token against: {}\n The username and password can be found earlier in the script.'.format(api_url))
     # No hook for this API call.
     data = {
-        'client_id': jamf_client_id, 
+        'client_id': jamf_client_id,
         'client_secret': jamf_client_secret,
         "grant_type": "client_credentials"
     }
@@ -411,7 +411,7 @@ def search_jamf_mobile(jamf_id):
         logging.warning('JAMFPro Ratelimit exceeded: pausing ')
         time.sleep(75)
         logging.info("Finished waiting. Retyring lookup...")
-        newresponse = search_jamf_asset(jamf_id)
+        newresponse = search_jamf_mobile(jamf_id)
         return newresponse
     else:
         logging.warning('JAMFPro responded with error code:{} when we tried to look up id: {}'.format(response, jamf_id))
