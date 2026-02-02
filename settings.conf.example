@@ -1,21 +1,21 @@
 [jamf]
 # This entire section is Required
-url = https://yourinstance.jamfcloud.com
-client_id = yourClientID
-client_secret = yourClientSecret
+url = ${JAMF_URL}
+client_id = ${JAMF_CLIENT_ID}
+client_secret = ${JAMF_CLIENT_SECRET}
 
 [snipe-it]
 #Required
-url = https://FQDN.your.snipe.instance.com
-apikey = YOUR-API-KEY-HERE
-manufacturer_id = 2
+url = ${SNIPEIT_URL}
+apikey = ${SNIPEIT_API_KEY}
+manufacturer_id = 1
 defaultStatus = 2
 computer_model_category_id = 2
-mobile_model_category_id = 3
+mobile_model_category_id = 5
 #Not Required, uncomment to use
-#computer_custom_fieldset_id = 3
-#mobile_custom_fieldset_id = 4
-#asset_tag = general serial_number # If not specified, defaults to jamf-{id} or jamf-m-{id}
+computer_custom_fieldset_id = 1
+mobile_custom_fieldset_id = 2
+#asset_tag = general serial_number
 
 # EDIT THESE FIELDS SO THEY CORRESPOND WITH THE CUSTOM FIELD DB COLUMN NAMES IN YOUR SNIPE-IT INSTANCE
 [computers-api-mapping]
@@ -24,10 +24,15 @@ _snipeit_mac_address_1 = general mac_address
 _snipeit_ram_2 = hardware total_ram_mb
 _snipeit_hdd_3 = hardware storage drive_capacity_mb
 
-
 [mobile_devices-api-mapping]
 _snipeit_imei_4	= network imei
+_snipeit_mac_address_1 = general wifi_mac_address
 name = general name
 
+<<<<<<< Updated upstream
 [user-mapping] # The field from jamf that you want to search Snipe with
 jamf_api_field = location username
+=======
+[user-mapping]
+jamf_api_field = location username building
+>>>>>>> Stashed changes
