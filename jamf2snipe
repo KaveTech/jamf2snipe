@@ -413,7 +413,7 @@ def search_jamf_mobile(jamf_id):
         logging.warning('JAMFPro Ratelimit exceeded: pausing ')
         time.sleep(75)
         logging.info("Finished waiting. Retyring lookup...")
-        newresponse = search_jamf_asset(jamf_id)
+        newresponse = search_jamf_mobile(jamf_id)
         return newresponse
     else:
         logging.warning('JAMFPro responded with error code:{} when we tried to look up id: {}'.format(response, jamf_id))
