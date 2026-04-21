@@ -204,7 +204,7 @@ first_api_call = None
 
 # Headers for the API call.
 logging.info("Creating the headers we'll need for API calls")
-jamfbasicheaders = {'Accept': 'application/json','Content-Type':'application/json'}
+jamfbasicheaders = {'Accept': 'application/json','Content-Type':'application/json','User-Agent':'Jamf2Snipe CLI'}
 snipeheaders = {'Authorization': 'Bearer {}'.format(snipe_apiKey),'Accept': 'application/json','Content-Type':'application/json'}
 logging.debug('Request headers for JamfPro will be: {}\nRequest headers for Snipe will be: {}'.format(jamfbasicheaders, snipeheaders))
 
