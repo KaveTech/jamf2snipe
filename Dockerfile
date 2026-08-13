@@ -11,4 +11,4 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Substitute environment variables in config file at runtime
-CMD envsubst < settings.conf.example > settings.conf && python jamf2snipe.py
+CMD envsubst < settings.conf.example > settings.conf && python jamf2snipe.py --do_not_update_jamf
