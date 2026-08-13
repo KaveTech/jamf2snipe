@@ -29,10 +29,5 @@ _snipeit_imei_4	= network imei
 _snipeit_mac_address_1 = general wifi_mac_address
 name = general name
 
-<<<<<<< Updated upstream
-[user-mapping] # The field from jamf that you want to search Snipe with
-jamf_api_field = location username
-=======
 [user-mapping]
 jamf_api_field = location username building
->>>>>>> Stashed changes
