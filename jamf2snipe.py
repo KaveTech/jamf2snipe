@@ -30,7 +30,7 @@
 #       _snipeit_custom_name_1234567890 = subset jamf_key
 #
 #   A list of valid subsets are:
-version = "1.0.7"
+version = "1.0.8"
 
 validsubset = [
         "general",
@@ -54,6 +54,7 @@ import configparser
 import argparse
 import logging
 import datetime
+from base64 import b64encode
 from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
@@ -69,6 +70,7 @@ runtimeargs.add_argument("--do_not_update_jamf", help="Does not update Jamf with
 runtimeargs.add_argument('--do_not_verify_ssl', help="Skips SSL verification for all requests. Helpful when you use self-signed certificate.", action="store_false")
 runtimeargs.add_argument("-r", "--ratelimited", help="Puts a half second delay between API calls to adhere to the standard 120/minute rate limit", action="store_true")
 runtimeargs.add_argument("-f", "--force", help="Updates the Snipe asset with information from Jamf every time, despite what the timestamps indicate.", action="store_true")
+runtimeargs.add_argument("-i", "--add_images", help="Attempts to add an image from appledb.dev to any newly created models", action="store_true")
 runtimeargs.add_argument("--version", help="Prints the version and exits.", action="store_true")
 user_opts = runtimeargs.add_mutually_exclusive_group()
 user_opts.add_argument("-u", "--users", help="Checks out the item to the current user in Jamf if it's not already deployed", action="store_true")
@@ -202,7 +204,7 @@ first_api_call = None
 
 # Headers for the API call.
 logging.info("Creating the headers we'll need for API calls")
-jamfbasicheaders = {'Accept': 'application/json','Content-Type':'application/json'}
+jamfbasicheaders = {'Accept': 'application/json','Content-Type':'application/json','User-Agent':'Jamf2Snipe CLI'}
 snipeheaders = {'Authorization': 'Bearer {}'.format(snipe_apiKey),'Accept': 'application/json','Content-Type':'application/json'}
 logging.debug('Request headers for JamfPro will be: {}\nRequest headers for Snipe will be: {}'.format(jamfbasicheaders, snipeheaders))
 
@@ -411,7 +413,7 @@ def search_jamf_mobile(jamf_id):
         logging.warning('JAMFPro Ratelimit exceeded: pausing ')
         time.sleep(75)
         logging.info("Finished waiting. Retyring lookup...")
-        newresponse = search_jamf_asset(jamf_id)
+        newresponse = search_jamf_mobile(jamf_id)
         return newresponse
     else:
         logging.warning('JAMFPro responded with error code:{} when we tried to look up id: {}'.format(response, jamf_id))
@@ -628,6 +630,24 @@ def get_snipe_location_id(location_name):
 # Function that creates a new Snipe Model - not an asset - with a JSON payload
 def create_snipe_model(payload):
     api_url = '{}/api/v1/models'.format(snipe_base)
+    if user_args.add_images:
+        try:
+            appledb_url = 'https://api.appledb.dev/device/{}.json'.format(payload["model_number"])
+            logging.debug('Fetching device info from AppleDB: {}'.format(appledb_url))
+            appledb_response = session.get(appledb_url)
+            appledb_response.raise_for_status()
+            appledb_data = appledb_response.json()
+            image_key = appledb_data['imageKey']
+            color = appledb_data['colors'][0]['key']
+            image_url = 'https://img.appledb.dev/device@main/{}/{}.png'.format(image_key, color)
+            logging.debug('Fetching device image from: {}'.format(image_url))
+            response = session.get(image_url)
+            response.raise_for_status()
+            payload["image"] = "data:" + response.headers['Content-Type'] + ";" + "base64," + b64encode(response.content).decode("utf-8")
+            logging.info("image url: {}".format(image_url))
+        except Exception as e:
+            logging.warning('Failed to fetch image for model {}: {}'.format(payload["model_number"], e))
+
     logging.debug('Calling to create new snipe model type against: {}\nThe payload for the POST request is:{}\nThe request headers can be found near the start of the output.'.format(api_url, payload))
     response = session.post(api_url, headers=snipeheaders, json=payload, verify=user_args.do_not_verify_ssl, hooks={'response': request_handler})
     if response.status_code == 200:
